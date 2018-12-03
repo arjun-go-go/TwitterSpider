@@ -208,9 +208,6 @@ class TwitterCheckMiddleware(object):
 
 
 
-"""8615510018612  qazwsx123456"""
-"""starksaya  stark123456789"""
-"""479510392@qq.com  13872774874twitter"""
 
 class JSPageMiddleware(object):
     #通过chrome 动态访问
@@ -223,11 +220,11 @@ class JSPageMiddleware(object):
             if "login" in request.url:
                 print("访问：{0}".format(request.url))
                 spider.browser.find_element_by_xpath(
-                    "//div[@class='clearfix field']/input[@name='session[username_or_email]']").send_keys('8615510018612')
+                    "//div[@class='clearfix field']/input[@name='session[username_or_email]']").send_keys('86155')
                 time.sleep(random.randint(2, 6))
 
                 spider.browser.find_element_by_xpath(
-                    "//div[@class='clearfix field']/input[@name='session[password]']").send_keys('qazwsx123456')
+                    "//div[@class='clearfix field']/input[@name='session[password]']").send_keys('qaz')
                 time.sleep(random.randint(2, 5))
                 spider.browser.find_element_by_xpath("//div[@class='clearfix']/button[@type='submit']").click()
                 time.sleep(random.randint(5, 8))
