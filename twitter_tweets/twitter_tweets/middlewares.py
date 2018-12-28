@@ -8,6 +8,12 @@ import re
 import time
 from fake_useragent import UserAgent
 from scrapy import signals
+from collections import deque
+import time
+from oauthlib.oauth1 import Client as Oauth1Client
+from oauthlib.oauth2 import InsecureTransportError
+from oauthlib.oauth2 import WebApplicationClient as Oauth2Client
+from scrapy.exceptions import NotConfigured
 
 
 class TwitterTweetsSpiderMiddleware(object):
@@ -158,4 +164,91 @@ class TwitterCheckMiddleware(object):
 
         else:
             return response
+
+"""twitter开发者Api认证中间件"""
+class HttpOAuth1Middleware(object):
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        o = cls()
+        crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
+        return o
+
+    def spider_opened(self, spider):
+        tokens = getattr(spider, 'oauth_token_list', None)
+        self.check_response = getattr(spider, 'oauth_check_response_func', self.default_check_response)
+        self.REQUEST_WINDOW_SIZE_MINS = getattr(spider, 'oauth_request_windows_size_mins', 0)
+
+        if tokens is None:
+            raise NotConfigured
+        self.tokens_live = deque()
+        self.tokens_dead = deque(zip(tokens, [float('-inf')] * len(tokens)))
+
+    def process_request(self, request, spider):
+        """获取令牌"""
+        token, requests_done = self._obtain_token(spider)
+
+        if token is None:
+            return request
+
+        auth = Oauth1Client(
+            client_key=token['consumer_key'],
+            client_secret=token['consumer_secret'],
+            resource_owner_key=token['access_token'],
+            resource_owner_secret=token['access_token_secret'])
+
+        uri, headers, body = auth.sign(request.url)
+        request.headers['Authorization'] = [headers['Authorization']]
+
+        request.meta['oauth'] = True
+        request.meta['token'] = token
+
+    def process_response(self, request, response, spider):
+
+        oauth_used = request.meta.get('oauth', False)
+
+        if oauth_used:
+            token_dead, retry_request = self.check_response(response)
+
+            token = request.meta['token']
+            if token_dead:
+                self.tokens_dead.append((token, time.time()))
+            else:
+                requests_succeed = request.meta['token_requests_succeed']
+                requests_succeed += 1
+                self.tokens_live.append((token, requests_succeed))
+
+            if retry_request:
+                del request.meta['token']
+                del request.meta['oauth']
+                return request
+            else:
+                return response
+
+    def default_check_response(self, response):
+        return True, False
+
+    def _dead_token_time_left(self):
+
+        if len(self.tokens_dead) > 0:
+            cred, time_expired = self.tokens_dead[0]
+            time_left = self.REQUEST_WINDOW_SIZE_MINS * 60 - (time.time() - time_expired)
+            time_left = time_left if time_left > 0 else 0
+            return time_left
+        else:
+            return float('inf')
+
+    def _obtain_token(self, spider):
+
+        if len(self.tokens_live) == 0 and self._dead_token_time_left() > 0:
+            return None, None
+
+        if len(self.tokens_live) > 0:
+            token, requests_succeed = self.tokens_live.popleft()
+        else:
+            token, _ = self.tokens_dead.popleft()
+            requests_done = 0
+
+        return token, requests_done
+
 

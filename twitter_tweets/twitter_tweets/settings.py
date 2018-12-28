@@ -96,6 +96,7 @@ DOWNLOADER_MIDDLEWARES = {
     'twitter_tweets.middlewares.RandomProxyMiddleware': 100,
     # 'twitter_tweets.middlewares.JavaScriptMiddleware': 200,
     # 'twitter_tweets.middlewares.JSPageMiddleware': 300,
+    'twitter_tweets.middlewares.HttpOAuth1Middleware': 200,
 }
 
 # Enable or disable extensions
