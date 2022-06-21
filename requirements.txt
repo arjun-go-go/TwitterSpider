@@ -41,7 +41,7 @@ matplotlib==2.1.2
 more-itertools==4.3.0
 neo4j-driver==1.6.2
 neotime==1.7.1
-numpy==1.14.0
+numpy==1.22.0
 oauthlib==2.1.0
 packaging==16.8
 pandas==0.23.4
