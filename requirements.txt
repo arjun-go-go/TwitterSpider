@@ -86,7 +86,7 @@ tomorrow==0.2.4
 tornado==4.5.3
 traitlets==4.3.2
 tweepy==3.6.0
-twisted==17.5.0
+twisted==22.10.0
 twitter==1.18.0
 urllib3==1.22
 w3lib==1.19.0
